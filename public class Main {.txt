@@ -1,0 +1,133 @@
+public class Main {
+    public static void main(String[] args) {
+        CustomerOperations customerOperations = new CustomerManager();
+
+        // Creating and adding customer objects
+        customerOperations.createCustomer(1, "John Doe", "john.doe@example.com", 75000.00, "Engineering", "New York", "123-456-7890", "Savings", true, 500.0, false);
+        customerOperations.createCustomer(2, "Jane Smith", "jane.smith@example.com", 82000.00, "Marketing", "Chicago", "234-567-8901", "Current", false, 0.0, true);
+        customerOperations.createCustomer(3, "Alice Johnson", "alice.johnson@example.com", 91000.00, "Finance", "San Francisco", "345-678-9012", "Savings", true, 750.0, false);
+
+        // Displaying all customers
+        customerOperations.displayCustomers();
+    }
+}
+
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class CustomerManager implements CustomerOperations {
+    private List<Customer> customers;
+
+    public CustomerManager() {
+        customers = new ArrayList<>();
+    }
+
+    @Override
+    public void createCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, boolean isPremium, double loyaltyPoints, boolean discountEligible) {
+        if (isPremium) {
+            Customer customer = new PremiumCustomer(customerId, name, mailId, salary, dept, location, contact, accountType, loyaltyPoints);
+            addCustomer(customer);
+        } else {
+            Customer customer = new NonPremiumCustomer(customerId, name, mailId, salary, dept, location, contact, accountType, discountEligible);
+            addCustomer(customer);
+        }
+    }
+
+    @Override
+    public void addCustomer(Customer customer) {
+        customers.add(customer);
+    }
+
+    @Override
+    public void displayCustomers() {
+        for (Customer customer : customers) {
+            customer.display();
+        }
+    }
+}
+
+
+
+
+
+
+public class NonPremiumCustomer extends Customer {
+    private boolean discountEligible;
+
+    public NonPremiumCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, boolean discountEligible) {
+        super(customerId, name, mailId, salary, dept, location, contact, accountType);
+        this.discountEligible = discountEligible;
+    }
+
+    @Override
+    public void display() {
+        super.display();
+        System.out.println("Discount Eligible: " + discountEligible);
+        System.out.println(); // for a blank line between customers
+    }
+}
+
+
+
+
+
+
+
+
+
+
+public class PremiumCustomer extends Customer {
+    private double loyaltyPoints;
+
+    public PremiumCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, double loyaltyPoints) {
+        super(customerId, name, mailId, salary, dept, location, contact, accountType);
+        this.loyaltyPoints = loyaltyPoints;
+    }
+
+    @Override
+    public void display() {
+        super.display();
+        System.out.println("Loyalty Points: " + loyaltyPoints);
+        System.out.println(); // for a blank line between customers
+    }
+}
+
+
+
+
+public class Customer {
+    private int customerId;
+    private String name;
+    private String mailId;
+    private double salary;
+    private String dept;
+    private String location;
+    private String contact;
+    private String accountType;
+
+    // Parameterized constructor
+    public Customer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType) {
+        this.customerId = customerId;
+        this.name = name;
+        this.mailId = mailId;
+        this.salary = salary;
+        this.dept = dept;
+        this.location = location;
+        this.contact = contact;
+        this.accountType = accountType;
+    }
+
+    // Method to display customer details
+    public void display() {
+        System.out.println("Customer ID: " + customerId);
+        System.out.println("Name: " + name);
+        System.out.println("Mail ID: " + mailId);
+        System.out.println("Salary: " + salary);
+        System.out.println("Department: " + dept);
+        System.out.println("Location: " + location);
+        System.out.println("Contact: " + contact);
+        System.out.println("Account Type: " + accountType);
+    }
+}
