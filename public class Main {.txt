@@ -1,133 +1,168 @@
-public class Main {
-    public static void main(String[] args) {
-        CustomerOperations customerOperations = new CustomerManager();
+package bank;
 
-        // Creating and adding customer objects
-        customerOperations.createCustomer(1, "John Doe", "john.doe@example.com", 75000.00, "Engineering", "New York", "123-456-7890", "Savings", true, 500.0, false);
-        customerOperations.createCustomer(2, "Jane Smith", "jane.smith@example.com", 82000.00, "Marketing", "Chicago", "234-567-8901", "Current", false, 0.0, true);
-        customerOperations.createCustomer(3, "Alice Johnson", "alice.johnson@example.com", 91000.00, "Finance", "San Francisco", "345-678-9012", "Savings", true, 750.0, false);
-
-        // Displaying all customers
-        customerOperations.displayCustomers();
-    }
-}
-
-
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class CustomerManager implements CustomerOperations {
-    private List<Customer> customers;
-
-    public CustomerManager() {
-        customers = new ArrayList<>();
-    }
-
-    @Override
-    public void createCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, boolean isPremium, double loyaltyPoints, boolean discountEligible) {
-        if (isPremium) {
-            Customer customer = new PremiumCustomer(customerId, name, mailId, salary, dept, location, contact, accountType, loyaltyPoints);
-            addCustomer(customer);
-        } else {
-            Customer customer = new NonPremiumCustomer(customerId, name, mailId, salary, dept, location, contact, accountType, discountEligible);
-            addCustomer(customer);
-        }
-    }
-
-    @Override
-    public void addCustomer(Customer customer) {
-        customers.add(customer);
-    }
-
-    @Override
-    public void displayCustomers() {
-        for (Customer customer : customers) {
-            customer.display();
-        }
-    }
-}
-
-
-
-
-
-
-public class NonPremiumCustomer extends Customer {
-    private boolean discountEligible;
-
-    public NonPremiumCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, boolean discountEligible) {
-        super(customerId, name, mailId, salary, dept, location, contact, accountType);
-        this.discountEligible = discountEligible;
-    }
-
-    @Override
-    public void display() {
-        super.display();
-        System.out.println("Discount Eligible: " + discountEligible);
-        System.out.println(); // for a blank line between customers
-    }
-}
-
-
-
-
-
-
-
-
-
-
-public class PremiumCustomer extends Customer {
-    private double loyaltyPoints;
-
-    public PremiumCustomer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType, double loyaltyPoints) {
-        super(customerId, name, mailId, salary, dept, location, contact, accountType);
-        this.loyaltyPoints = loyaltyPoints;
-    }
-
-    @Override
-    public void display() {
-        super.display();
-        System.out.println("Loyalty Points: " + loyaltyPoints);
-        System.out.println(); // for a blank line between customers
-    }
-}
-
-
-
-
-public class Customer {
-    private int customerId;
+public abstract class Customer {
+    private static int idCounter = 1000;
+    private int customerID;
     private String name;
-    private String mailId;
-    private double salary;
-    private String dept;
-    private String location;
+    private String email;
     private String contact;
     private String accountType;
 
-    // Parameterized constructor
-    public Customer(int customerId, String name, String mailId, double salary, String dept, String location, String contact, String accountType) {
-        this.customerId = customerId;
+    public Customer(String name, String email, String contact, String accountType) {
+        this.customerID = ++idCounter;
         this.name = name;
-        this.mailId = mailId;
-        this.salary = salary;
-        this.dept = dept;
-        this.location = location;
+        this.email = email;
         this.contact = contact;
         this.accountType = accountType;
     }
 
-    // Method to display customer details
-    public void display() {
-        System.out.println("Customer ID: " + customerId);
-        System.out.println("Name: " + name);
-        System.out.println("Mail ID: " + mailId);
-        System.out.println("Salary: " + salary);
-        System.out.println("Department: " + dept);
-        System.out.println("Location: " + location);
-        System.out.println("Contact: " + contact);
-        System.out.println("Account Type: " + accountType);
+    // Getters
+    public int getCustomerID() {
+        return customerID;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public String getAccountType() {
+        return accountType;
+    }
+
+    // Abstract method to display customer details
+    public abstract void displayCustomerDetails();
+}
+
+
+
+
+
+
+package bank;
+
+public class BankCustomer extends Customer {
+    public BankCustomer(String name, String email, String contact, String accountType) {
+        super(name, email, contact, accountType);
+    }
+
+    @Override
+    public void displayCustomerDetails() {
+        System.out.println("Customer ID: " + getCustomerID());
+        System.out.println("Name: " + getName());
+        System.out.println("Email: " + getEmail());
+        System.out.println("Contact: " + getContact());
+        System.out.println("Account Type: " + getAccountType());
+        System.out.println("-------------------------------");
+    }
+}
+
+
+
+package bank;
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class BankCustomerManagementSystem {
+    private ArrayList<Customer> customers = new ArrayList<>();
+
+    // Method to add a new customer
+    public void addNewCustomer(String name, String email, String contact, String accountType) {
+        BankCustomer newCustomer = new BankCustomer(name, email, contact, accountType);
+        customers.add(newCustomer);
+        System.out.println("Customer added successfully with customer ID " + newCustomer.getCustomerID());
+    }
+
+    // Method to display all customers
+    public void displayCustomers() {
+        if (customers.isEmpty()) {
+            System.out.println("No customers to display.");
+        } else {
+            for (Customer customer : customers) {
+                customer.displayCustomerDetails();
+            }
+        }
+    }
+
+    // Method to search for a customer by ID
+    public void searchCustomer(int customerID) {
+        for (Customer customer : customers) {
+            if (customer.getCustomerID() == customerID) {
+                customer.displayCustomerDetails();
+                return;
+            }
+        }
+        System.out.println("Customer not found with ID " + customerID);
+    }
+
+    // Method to delete a customer by ID
+    public void deleteCustomer(int customerID) {
+        for (Customer customer : customers) {
+            if (customer.getCustomerID() == customerID) {
+                customers.remove(customer);
+                System.out.println("Customer with ID " + customerID + " deleted successfully.");
+                return;
+            }
+        }
+        System.out.println("Customer not found with ID " + customerID);
+    }
+
+    public static void main(String[] args) {
+        BankCustomerManagementSystem system = new BankCustomerManagementSystem();
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("Welcome to Standard Chartered Bank");
+            System.out.println("Please enter your choice:");
+            System.out.println("1: Add New Customer");
+            System.out.println("2: Display Customers");
+            System.out.println("3: Search Customer");
+            System.out.println("4: Delete Customer");
+            System.out.println("5: Exit the Bank Application");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter Name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter Email: ");
+                    String email = scanner.nextLine();
+                    System.out.print("Enter Contact: ");
+                    String contact = scanner.nextLine();
+                    System.out.print("Enter Account Type: ");
+                    String accountType = scanner.nextLine();
+                    system.addNewCustomer(name, email, contact, accountType);
+                    break;
+                case 2:
+                    system.displayCustomers();
+                    break;
+                case 3:
+                    System.out.print("Enter Customer ID to search: ");
+                    int searchID = scanner.nextInt();
+                    system.searchCustomer(searchID);
+                    break;
+                case 4:
+                    System.out.print("Enter Customer ID to delete: ");
+                    int deleteID = scanner.nextInt();
+                    system.deleteCustomer(deleteID);
+                    break;
+                case 5:
+                    System.out.println("Exiting the Bank Application.");
+                    scanner.close();
+                    return;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
     }
 }
