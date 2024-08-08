@@ -1,24 +1,286 @@
-package bank;
+package utils;
+
+import exceptions.BankCustomerManagementException.InvalidInputException;
+
+import java.util.regex.Pattern;
+
+public class ValidationUtil {
+
+    public static void validateName(String name) throws InvalidInputException {
+        if (!Pattern.matches("^[a-zA-Z\\s]+$", name)) {
+            throw new InvalidInputException("Invalid name format. Name should contain only alphabets and spaces.");
+        }
+    }
+
+    public static void validateEmail(String email) throws InvalidInputException {
+        if (!Pattern.matches("^[A-Za-z0-9+_.-]+@(.+)$", email)) {
+            throw new InvalidInputException("Invalid email format. Example: example@example.com.");
+        }
+    }
+
+    public static void validateContact(String contact) throws InvalidInputException {
+        if (!Pattern.matches("^\\d{10}$", contact)) {
+            throw new InvalidInputException("Invalid contact format. Contact should contain exactly 10 digits.");
+        }
+    }
+}
+--------------------------------------------------------------------------------------------------------------------------------
+package services;
+
+import beans.Customer;
+import beans.PremiumCustomer;
+import beans.RegularCustomer;
+import exceptions.BankCustomerManagementException.InvalidInputException;
+import exceptions.BankCustomerManagementException.CustomerNotFoundException;
+import utils.ValidationUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public class CustomerService implements CustomerServiceInterface {
+    private List<Customer> customers = new ArrayList<>();
+
+    private void validateCustomerDetails(String name, String email, String contact) throws InvalidInputException {
+        ValidationUtil.validateName(name);
+        ValidationUtil.validateEmail(email);
+        ValidationUtil.validateContact(contact);
+    }
+
+    @Override
+    public void addCustomer(String name, String email, String contact, String accountType, boolean isPremium) throws InvalidInputException {
+        validateCustomerDetails(name, email, contact);
+
+        Customer customer;
+        if (isPremium) {
+            customer = new PremiumCustomer(name, email, contact, accountType);
+            assignRelationshipManager((PremiumCustomer) customer);
+        } else {
+            customer = new RegularCustomer(name, email, contact, accountType);
+        }
+        customers.add(customer);
+        System.out.println("Customer added successfully with Customer ID: " + customer.getCustomerId());
+    }
+
+    @Override
+    public void displayCustomers() {
+        if (customers.isEmpty()) {
+            System.out.println("No customers found.");
+        } else {
+            for (Customer customer : customers) {
+                System.out.println(customer);
+                System.out.println("---------------------");
+            }
+        }
+    }
+
+    @Override
+    public void searchCustomer(String customerId) throws CustomerNotFoundException {
+        Optional<Customer> customer = customers.stream().filter(c -> c.getCustomerId().equals(customerId)).findFirst();
+        if (customer.isPresent()) {
+            System.out.println(customer.get());
+        } else {
+            throw new CustomerNotFoundException("Customer with ID " + customerId + " not found.");
+        }
+    }
+
+    @Override
+    public void deleteCustomer(String customerId) throws CustomerNotFoundException {
+        Optional<Customer> customer = customers.stream().filter(c -> c.getCustomerId().equals(customerId)).findFirst();
+        if (customer.isPresent()) {
+            customers.remove(customer.get());
+            System.out.println("Customer with ID " + customerId + " deleted successfully.");
+        } else {
+            throw new CustomerNotFoundException("Customer with ID " + customerId + " not found.");
+        }
+    }
+
+    @Override
+    public void assignRelationshipManager(PremiumCustomer premiumCustomer) {
+        // Relationship Manager ID is already assigned in PremiumCustomer constructor
+        System.out.println("Assigned Relationship Manager ID: " + premiumCustomer.getRelationshipManagerId());
+    }
+}
+---------------------------------------------------------------------------------------------------------------
+import services.CustomerService;
+import exceptions.BankCustomerManagementException.InvalidInputException;
+import exceptions.BankCustomerManagementException.CustomerNotFoundException;
+
+import java.util.Scanner;
+
+public class BankCustomerManagementSystem {
+    public static void main(String[] args) {
+        CustomerService customerService = new CustomerService();
+        Scanner scanner = new Scanner(System.in);
+        int choice;
+
+        do {
+            System.out.println("Welcome to Standard Chartered Bank. Please enter your choice:");
+            System.out.println("1. Add new customer");
+            System.out.println("2. Display customers");
+            System.out.println("3. Search customer");
+            System.out.println("4. Delete customer");
+            System.out.println("5. Exit the bank application");
+
+            choice = scanner.nextInt();
+            scanner.nextLine(); // consume the newline character
+
+            switch (choice) {
+                case 1:
+                    boolean validInput = false;
+                    while (!validInput) {
+                        System.out.println("Enter customer details:");
+                        System.out.print("Name: ");
+                        String name = scanner.nextLine();
+                        System.out.print("Email: ");
+                        String email = scanner.nextLine();
+                        System.out.print("Contact: ");
+                        String contact = scanner.nextLine();
+                        System.out.print("Account Type: ");
+                        String accountType = scanner.nextLine();
+                        System.out.print("Is the customer a Premium customer? (yes/no): ");
+                        String premiumInput = scanner.nextLine();
+                        boolean isPremium = premiumInput.equalsIgnoreCase("yes");
+
+                        try {
+                            customerService.addCustomer(name, email, contact, accountType, isPremium);
+                            validInput = true;
+                        } catch (InvalidInputException e) {
+                            System.out.println(e.getMessage());
+                            System.out.println("Please re-enter the details in the correct format.");
+                        }
+                    }
+                    break;
+                case 2:
+                    customerService.displayCustomers();
+                    break;
+                case 3:
+                    System.out.print("Enter Customer ID to search: ");
+                    String searchId = scanner.nextLine();
+                    try {
+                        customerService.searchCustomer(searchId);
+                    } catch (CustomerNotFoundException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                case 4:
+                    System.out.print("Enter Customer ID to delete: ");
+                    String deleteId = scanner.nextLine();
+                    try {
+                        customerService.deleteCustomer(deleteId);
+                    } catch (CustomerNotFoundException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                case 5:
+                    System.out.println("Exiting the application. Thank you!");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+                    break;
+            }
+        } while (choice != 5);
+
+        scanner.close();
+    }
+}
+---------------------------------------------------------------------------------
+package services;
+
+import beans.PremiumCustomer;
+import exceptions.BankCustomerManagementException.InvalidInputException;
+import exceptions.BankCustomerManagementException.CustomerNotFoundException;
+
+public interface CustomerServiceInterface {
+    void addCustomer(String name, String email, String contact, String accountType, boolean isPremium) throws InvalidInputException;
+    void displayCustomers();
+    void searchCustomer(String customerId) throws CustomerNotFoundException;
+    void deleteCustomer(String customerId) throws CustomerNotFoundException;
+    void assignRelationshipManager(PremiumCustomer premiumCustomer);
+}
+------------------------------------------------------------------------------------
+package exceptions;
+
+public class BankCustomerManagementException extends Exception {
+    public BankCustomerManagementException(String message) {
+        super(message);
+    }
+
+    public static class CustomerNotFoundException extends BankCustomerManagementException {
+        public CustomerNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    public static class InvalidInputException extends BankCustomerManagementException {
+        public InvalidInputException(String message) {
+            super(message);
+        }
+    }
+}
+--------------------------------------------------------
+
+package beans;
+
+public class RegularCustomer extends Customer {
+    private static int idCounter = 1;
+
+    public RegularCustomer(String name, String email, String contact, String accountType) {
+        super(name, email, contact, accountType);
+        setCustomerId("REG" + idCounter++);
+    }
+}
+-----------------------------------------
+package beans;
+
+import java.util.UUID;
+
+public class PremiumCustomer extends Customer {
+    private static int idCounter = 1;
+    private String relationshipManagerId;
+
+    public PremiumCustomer(String name, String email, String contact, String accountType) {
+        super(name, email, contact, accountType);
+        setCustomerId("PRE" + idCounter++);
+        assignRelationshipManager();
+    }
+
+    private void assignRelationshipManager() {
+        this.relationshipManagerId = UUID.randomUUID().toString();
+    }
+
+    public String getRelationshipManagerId() {
+        return relationshipManagerId;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + "\nRelationship Manager ID: " + relationshipManagerId;
+    }
+}
+------------------------------------------
+package beans;
 
 public abstract class Customer {
-    private static int idCounter = 1000;
-    private int customerID;
+    private String customerId;
     private String name;
     private String email;
     private String contact;
     private String accountType;
 
     public Customer(String name, String email, String contact, String accountType) {
-        this.customerID = ++idCounter;
         this.name = name;
         this.email = email;
         this.contact = contact;
         this.accountType = accountType;
     }
 
-    // Getters
-    public int getCustomerID() {
-        return customerID;
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    protected void setCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 
     public String getName() {
@@ -37,132 +299,8 @@ public abstract class Customer {
         return accountType;
     }
 
-    // Abstract method to display customer details
-    public abstract void displayCustomerDetails();
-}
-
-
-
-
-
-
-package bank;
-
-public class BankCustomer extends Customer {
-    public BankCustomer(String name, String email, String contact, String accountType) {
-        super(name, email, contact, accountType);
-    }
-
     @Override
-    public void displayCustomerDetails() {
-        System.out.println("Customer ID: " + getCustomerID());
-        System.out.println("Name: " + getName());
-        System.out.println("Email: " + getEmail());
-        System.out.println("Contact: " + getContact());
-        System.out.println("Account Type: " + getAccountType());
-        System.out.println("-------------------------------");
-    }
-}
-
-
-
-package bank;
-
-import java.util.ArrayList;
-import java.util.Scanner;
-
-public class BankCustomerManagementSystem {
-    private ArrayList<Customer> customers = new ArrayList<>();
-
-    // Method to add a new customer
-    public void addNewCustomer(String name, String email, String contact, String accountType) {
-        BankCustomer newCustomer = new BankCustomer(name, email, contact, accountType);
-        customers.add(newCustomer);
-        System.out.println("Customer added successfully with customer ID " + newCustomer.getCustomerID());
-    }
-
-    // Method to display all customers
-    public void displayCustomers() {
-        if (customers.isEmpty()) {
-            System.out.println("No customers to display.");
-        } else {
-            for (Customer customer : customers) {
-                customer.displayCustomerDetails();
-            }
-        }
-    }
-
-    // Method to search for a customer by ID
-    public void searchCustomer(int customerID) {
-        for (Customer customer : customers) {
-            if (customer.getCustomerID() == customerID) {
-                customer.displayCustomerDetails();
-                return;
-            }
-        }
-        System.out.println("Customer not found with ID " + customerID);
-    }
-
-    // Method to delete a customer by ID
-    public void deleteCustomer(int customerID) {
-        for (Customer customer : customers) {
-            if (customer.getCustomerID() == customerID) {
-                customers.remove(customer);
-                System.out.println("Customer with ID " + customerID + " deleted successfully.");
-                return;
-            }
-        }
-        System.out.println("Customer not found with ID " + customerID);
-    }
-
-    public static void main(String[] args) {
-        BankCustomerManagementSystem system = new BankCustomerManagementSystem();
-        Scanner scanner = new Scanner(System.in);
-
-        while (true) {
-            System.out.println("Welcome to Standard Chartered Bank");
-            System.out.println("Please enter your choice:");
-            System.out.println("1: Add New Customer");
-            System.out.println("2: Display Customers");
-            System.out.println("3: Search Customer");
-            System.out.println("4: Delete Customer");
-            System.out.println("5: Exit the Bank Application");
-
-            int choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
-
-            switch (choice) {
-                case 1:
-                    System.out.print("Enter Name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter Email: ");
-                    String email = scanner.nextLine();
-                    System.out.print("Enter Contact: ");
-                    String contact = scanner.nextLine();
-                    System.out.print("Enter Account Type: ");
-                    String accountType = scanner.nextLine();
-                    system.addNewCustomer(name, email, contact, accountType);
-                    break;
-                case 2:
-                    system.displayCustomers();
-                    break;
-                case 3:
-                    System.out.print("Enter Customer ID to search: ");
-                    int searchID = scanner.nextInt();
-                    system.searchCustomer(searchID);
-                    break;
-                case 4:
-                    System.out.print("Enter Customer ID to delete: ");
-                    int deleteID = scanner.nextInt();
-                    system.deleteCustomer(deleteID);
-                    break;
-                case 5:
-                    System.out.println("Exiting the Bank Application.");
-                    scanner.close();
-                    return;
-                default:
-                    System.out.println("Invalid choice. Please try again.");
-            }
-        }
+    public String toString() {
+        return "Customer ID: " + customerId + "\nName: " + name + "\nEmail: " + email + "\nContact: " + contact + "\nAccount Type: " + accountType;
     }
 }
